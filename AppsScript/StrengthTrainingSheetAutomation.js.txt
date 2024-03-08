@@ -1,0 +1,103 @@
+var POUNDS = 5; // 'Pounds';
+var REPS = 4; // 'Reps';
+var SETS = 3; // 'Sets';
+var DATE = 2; // 'Date';
+var CATEGORY = 1;
+
+var HEADER_COUNT = 1;
+var ROW_BUTTON_BUFFER = 3;
+
+var SETS_DEFAULT = 1;
+
+function getDateCell(range, row) {
+  return range.getCell(row, DATE);
+}
+
+function getCategoryCell(range, row) {
+  return range.getCell(row, CATEGORY);
+}
+
+function getSetsCell(range, row) {
+  return range.getCell(row, SETS);
+}
+
+function setValueIfBlank(cell, value) {
+  if (cell.isBlank()) {
+    cell.setValue(value);
+  }
+}
+
+function fillDateFromEnd(dataRange, dateString) {
+  // starting at end, fill in todays date
+  var lastEmpty = dataRange.getNumRows();
+  while (getDateCell(dataRange, lastEmpty).isBlank()) {
+    getDateCell(dataRange, lastEmpty).setValue(dateString);
+    lastEmpty--;
+  }
+
+  return lastEmpty;
+}
+
+function fillDefaultsFrom(dataRange, startingRow) {
+  // fill in any blanks, beginning from the top
+  var cachedDate, cachedCategory;
+  for (var i = startingRow; i <= dataRange.getNumRows(); i++) {
+    var dateCell = getDateCell(dataRange, i);
+    if (!dateCell.isBlank()) {
+      cachedDate = dateCell.getValue();
+    } else if (cachedDate != null) {
+      dateCell.setValue(cachedDate);
+    }
+  
+    var categoryCell = getCategoryCell(dataRange, i);
+    if (!categoryCell.isBlank()) {
+      cachedCategory = categoryCell.getValue();
+    } else if (cachedCategory != null) {
+      categoryCell.setValue(cachedCategory);
+    }
+
+    setValueIfBlank(getSetsCell(dataRange, i), SETS_DEFAULT);
+  }
+}
+
+function getCurrentDateString() {
+  return Utilities.formatDate(new Date(), 'GMT-6', 'MM/dd/yyyy');
+}
+
+function fillFromEnd(dataRange) {
+  var dateString = getCurrentDateString();
+  var rowChecked = fillDateFromEnd(dataRange);
+
+  while (getDateCell(dataRange, rowChecked).getValue() == dateString) {
+    rowChecked--;
+  }
+
+  fillDefaultsFrom(dataRange, rowChecked);
+}
+
+function moveDrawings(sheet, row){
+  sheet.getDrawings().forEach(d => {
+    var info = d.getContainerInfo();
+    d.setPosition(row, info.getAnchorColumn(), info.getOffsetX(), info.getOffsetY());
+  });
+}
+
+// fills default values in all empty cells
+function autofillAll() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var dataRange = sheet.getDataRange();
+
+  fillDateFromEnd(dataRange, getCurrentDateString());
+  fillDefaultsFrom(dataRange, HEADER_COUNT);
+
+  moveDrawings(sheet, dataRange.getNumRows() + ROW_BUTTON_BUFFER);
+}
+
+// fills default values in empty cells at the end of the sheet
+function fillDefaultsFromEnd() {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var dataRange = sheet.getDataRange();
+
+  fillDateFromEnd(dataRange);
+  moveDrawings(sheet, dataRange.getNumRows() + ROW_BUTTON_BUFFER);
+}
