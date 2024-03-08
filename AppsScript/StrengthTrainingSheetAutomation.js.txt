@@ -52,7 +52,11 @@ function fillDefaultsFrom(dataRange, startingRow) {
     var categoryCell = getCategoryCell(dataRange, i);
     if (!categoryCell.isBlank()) {
       cachedCategory = categoryCell.getValue();
-    } else if (cachedCategory != null) {
+    } if (categoryCell.getNote()) {
+      // when there's a note, it may indicate a new category
+      // so do not autofill it or the next one(s)
+      cachedCategory = null;
+    } else if (cachedCategory != null){
       categoryCell.setValue(cachedCategory);
     }
 
@@ -61,14 +65,20 @@ function fillDefaultsFrom(dataRange, startingRow) {
 }
 
 function getCurrentDateString() {
-  return Utilities.formatDate(new Date(), 'GMT-6', 'MM/dd/yyyy');
+  return Utilities.formatDate(new Date(), 'GMT-6', 'M/d/yyyy');
 }
 
-function fillFromEnd(dataRange) {
+function getCellDateString(dataRange, row) {
+  var cell = getDateCell(dataRange, row);
+  return cell.isBlank()
+    ? ''
+    : Utilities.formatDate(cell.getValue(), 'GMT-6', cell.getNumberFormat());
+}
+
+function fillCurrentDate(dataRange) {
   var dateString = getCurrentDateString();
   var rowChecked = fillDateFromEnd(dataRange);
-
-  while (getDateCell(dataRange, rowChecked).getValue() == dateString) {
+  while (getCellDateString(dataRange, rowChecked) == dateString) {
     rowChecked--;
   }
 
@@ -98,6 +108,6 @@ function fillDefaultsFromEnd() {
   var sheet = SpreadsheetApp.getActiveSheet();
   var dataRange = sheet.getDataRange();
 
-  fillDateFromEnd(dataRange);
+  fillCurrentDate(dataRange);
   moveDrawings(sheet, dataRange.getNumRows() + ROW_BUTTON_BUFFER);
 }
