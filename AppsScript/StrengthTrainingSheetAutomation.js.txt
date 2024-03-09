@@ -1,3 +1,8 @@
+/// Google Apps Script support for Strength Training sheet.
+/// Includes functions for filling in blanks based on previous data
+/// or defaults and related helpers.
+
+// Declare columns
 var POUNDS = 5; // 'Pounds';
 var REPS = 4; // 'Reps';
 var SETS = 3; // 'Sets';
@@ -5,7 +10,7 @@ var DATE = 2; // 'Date';
 var CATEGORY = 1;
 
 var HEADER_COUNT = 1;
-var ROW_BUTTON_BUFFER = 3;
+var ROW_BUTTON_BUFFER = 5;
 
 var SETS_DEFAULT = 1;
 
@@ -27,8 +32,9 @@ function setValueIfBlank(cell, value) {
   }
 }
 
+// starting at the end of the dataRange, fill blank date cells
+// with given dateString
 function fillDateFromEnd(dataRange, dateString) {
-  // starting at end, fill in todays date
   var lastEmpty = dataRange.getNumRows();
   while (getDateCell(dataRange, lastEmpty).isBlank()) {
     getDateCell(dataRange, lastEmpty).setValue(dateString);
@@ -38,8 +44,11 @@ function fillDateFromEnd(dataRange, dateString) {
   return lastEmpty;
 }
 
+// fill blank spaces in the dataRange starting at the given row.
+// sets date and category cells to the most recent value (unless 
+// there is a note in the category cell) and fills set cells with 
+// the default value.
 function fillDefaultsFrom(dataRange, startingRow) {
-  // fill in any blanks, beginning from the top
   var cachedDate, cachedCategory;
   for (var i = startingRow; i <= dataRange.getNumRows(); i++) {
     var dateCell = getDateCell(dataRange, i);
@@ -68,6 +77,7 @@ function getCurrentDateString() {
   return Utilities.formatDate(new Date(), 'GMT-6', 'M/d/yyyy');
 }
 
+// get the string in the date cell of the given row
 function getCellDateString(dataRange, row) {
   var cell = getDateCell(dataRange, row);
   return cell.isBlank()
@@ -75,16 +85,7 @@ function getCellDateString(dataRange, row) {
     : Utilities.formatDate(cell.getValue(), 'GMT-6', cell.getNumberFormat());
 }
 
-function fillCurrentDate(dataRange) {
-  var dateString = getCurrentDateString();
-  var rowChecked = fillDateFromEnd(dataRange);
-  while (getCellDateString(dataRange, rowChecked) == dateString) {
-    rowChecked--;
-  }
-
-  fillDefaultsFrom(dataRange, rowChecked);
-}
-
+// move all drawings in the sheet to after the data range
 function moveDrawings(sheet, row){
   sheet.getDrawings().forEach(d => {
     var info = d.getContainerInfo();
@@ -92,7 +93,8 @@ function moveDrawings(sheet, row){
   });
 }
 
-// fills default values in all empty cells
+// fills default values in all empty cells, and update button (drawing)
+// locations to after data range.
 function autofillAll() {
   var sheet = SpreadsheetApp.getActiveSheet();
   var dataRange = sheet.getDataRange();
@@ -103,11 +105,19 @@ function autofillAll() {
   moveDrawings(sheet, dataRange.getNumRows() + ROW_BUTTON_BUFFER);
 }
 
-// fills default values in empty cells at the end of the sheet
+// from the end, fill blanks with current date, and fill defaults for
+// all of today's rows. also update button (drawing) locations to 
+// after data range.
 function fillDefaultsFromEnd() {
   var sheet = SpreadsheetApp.getActiveSheet();
   var dataRange = sheet.getDataRange();
+  var dateString = getCurrentDateString();
 
-  fillCurrentDate(dataRange);
+  var rowChecked = fillDateFromEnd(dataRange, dateString);
+  while (getCellDateString(dataRange, rowChecked) == dateString) {
+    rowChecked--;
+  }
+
+  fillDefaultsFrom(dataRange, rowChecked);
   moveDrawings(sheet, dataRange.getNumRows() + ROW_BUTTON_BUFFER);
 }
