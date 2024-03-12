@@ -2,30 +2,6 @@
 /// Includes functions for filling in blanks based on previous data
 /// or defaults and related helpers.
 
-// Declare columns
-var POUNDS = 5; // 'Pounds';
-var REPS = 4; // 'Reps';
-var SETS = 3; // 'Sets';
-var DATE = 2; // 'Date';
-var CATEGORY = 1;
-
-var HEADER_COUNT = 1;
-var ROW_BUTTON_BUFFER = 5;
-
-var SETS_DEFAULT = 1;
-
-function getDateCell(range, row) {
-  return range.getCell(row, DATE);
-}
-
-function getCategoryCell(range, row) {
-  return range.getCell(row, CATEGORY);
-}
-
-function getSetsCell(range, row) {
-  return range.getCell(row, SETS);
-}
-
 function setValueIfBlank(cell, value) {
   if (cell.isBlank()) {
     cell.setValue(value);
@@ -73,18 +49,6 @@ function fillDefaultsFrom(dataRange, startingRow) {
   }
 }
 
-function getCurrentDateString() {
-  return Utilities.formatDate(new Date(), 'GMT-6', 'M/d/yyyy');
-}
-
-// get the string in the date cell of the given row
-function getCellDateString(dataRange, row) {
-  var cell = getDateCell(dataRange, row);
-  return cell.isBlank()
-    ? ''
-    : Utilities.formatDate(cell.getValue(), 'GMT-6', cell.getNumberFormat());
-}
-
 // move all drawings in the sheet to after the data range
 function moveDrawings(sheet, row){
   sheet.getDrawings().forEach(d => {
@@ -96,7 +60,7 @@ function moveDrawings(sheet, row){
 // fills default values in all empty cells, and update button (drawing)
 // locations to after data range.
 function autofillAll() {
-  var sheet = SpreadsheetApp.getActiveSheet();
+  var sheet = getDataSheet();
   var dataRange = sheet.getDataRange();
 
   fillDateFromEnd(dataRange, getCurrentDateString());
@@ -109,7 +73,7 @@ function autofillAll() {
 // all of today's rows. also update button (drawing) locations to 
 // after data range.
 function fillDefaultsFromEnd() {
-  var sheet = SpreadsheetApp.getActiveSheet();
+  var sheet = getDataSheet();
   var dataRange = sheet.getDataRange();
   var dateString = getCurrentDateString();
 
